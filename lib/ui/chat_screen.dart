@@ -18,37 +18,54 @@ class _MQTTViewState extends State<MQTTView> {
   MessageProvider currentAppState;
   MQTTManager manager;
 
-  @override
-  void dispose() {
-    _hostTextController.dispose();
-    _messageTextController.dispose();
-    _topicTextController.dispose();
-    super.dispose();
+  void _configureAndConnect() {
+    String osPrefix = 'Flutter_iOS';
+    if (Platform.isAndroid) {
+      osPrefix = 'Flutter_Android';
+    }
+    manager = MQTTManager(
+        host: _hostTextController.text,
+        topic: _topicTextController.text,
+        identifier: osPrefix,
+        state: currentAppState);
+    manager.initializeMQTTClient();
+    manager.connect();
+  }
+
+  void _disconnect() {
+    manager.disconnect();
+  }
+
+  void _publishMessage(String text) {
+    String osPrefix = 'Flutter_iOS';
+    if (Platform.isAndroid) {
+      osPrefix = 'Flutter_Android';
+    }
+    final String message = osPrefix + ' : ' + text;
+    manager.publish(message);
+    _messageTextController.clear();
   }
 
   @override
   Widget build(BuildContext context) {
     final MessageProvider appState = Provider.of<MessageProvider>(context);
-    // Keep a reference to the app state.
     currentAppState = appState;
     final Scaffold scaffold = Scaffold(
-        appBar: AppBar(
-          title: Text('Shiftr Chat App'),
-          backgroundColor: Colors.indigo,
+      appBar: AppBar(
+        title: Text('Shiftr Chat App'),
+        backgroundColor: Colors.indigo,
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            _buildConnectionStateText(currentAppState.getAppConnectionState),
+            _buildEditableColumn(),
+            _buildScrollableTextWith(currentAppState.getHistoryText)
+          ],
         ),
-        body: _buildColumn());
-    return scaffold;
-  }
-
-  Widget _buildColumn() {
-    return Column(
-      children: <Widget>[
-        _buildConnectionStateText(
-            _prepareStateMessageFrom(currentAppState.getAppConnectionState)),
-        _buildEditableColumn(),
-        _buildScrollableTextWith(currentAppState.getHistoryText)
-      ],
+      ),
     );
+    return scaffold;
   }
 
   Widget _buildEditableColumn() {
@@ -85,13 +102,27 @@ class _MQTTViewState extends State<MQTTView> {
     );
   }
 
-  Widget _buildConnectionStateText(String status) {
+  Widget _buildConnectionStateText(MQTTAppConnectionState state) {
     return Row(
       children: <Widget>[
         Expanded(
           child: Container(
-              color: Colors.deepOrangeAccent,
-              child: Text(status, textAlign: TextAlign.center)),
+            color: state == MQTTAppConnectionState.connected
+                ? Colors.green
+                : state == MQTTAppConnectionState.connected
+                    ? Colors.orange
+                    : Colors.red,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 5.0),
+              child: Text(
+                  state == MQTTAppConnectionState.connected
+                      ? 'Connected'
+                      : state == MQTTAppConnectionState.connected
+                          ? ' Connecting'
+                          : 'Disconnected',
+                  textAlign: TextAlign.center),
+            ),
+          ),
         ),
       ],
     );
@@ -110,13 +141,14 @@ class _MQTTViewState extends State<MQTTView> {
       shouldEnable = true;
     }
     return TextField(
-        enabled: shouldEnable,
-        controller: controller,
-        decoration: InputDecoration(
-          contentPadding:
-              const EdgeInsets.only(left: 0, bottom: 0, top: 0, right: 0),
-          labelText: hintText,
-        ));
+      enabled: shouldEnable,
+      controller: controller,
+      decoration: InputDecoration(
+        contentPadding:
+            const EdgeInsets.only(left: 0, bottom: 0, top: 0, right: 0),
+        labelText: hintText,
+      ),
+    );
   }
 
   Widget _buildScrollableTextWith(String text) {
@@ -168,46 +200,5 @@ class _MQTTViewState extends State<MQTTView> {
             }
           : null, //
     );
-  }
-
-  // Utility functions
-  String _prepareStateMessageFrom(MQTTAppConnectionState state) {
-    switch (state) {
-      case MQTTAppConnectionState.connected:
-        return 'Connected';
-      case MQTTAppConnectionState.connecting:
-        return 'Connecting';
-      case MQTTAppConnectionState.disconnected:
-        return 'Disconnected';
-    }
-  }
-
-  void _configureAndConnect() {
-    // TODO: Use UUID
-    String osPrefix = 'Flutter_iOS';
-    if (Platform.isAndroid) {
-      osPrefix = 'Flutter_Android';
-    }
-    manager = MQTTManager(
-        host: _hostTextController.text,
-        topic: _topicTextController.text,
-        identifier: osPrefix,
-        state: currentAppState);
-    manager.initializeMQTTClient();
-    manager.connect();
-  }
-
-  void _disconnect() {
-    manager.disconnect();
-  }
-
-  void _publishMessage(String text) {
-    String osPrefix = 'Flutter_iOS';
-    if (Platform.isAndroid) {
-      osPrefix = 'Flutter_Android';
-    }
-    final String message = osPrefix + ' says: ' + text;
-    manager.publish(message);
-    _messageTextController.clear();
   }
 }

@@ -17,6 +17,7 @@ class _MQTTViewState extends State<MQTTView> {
   final TextEditingController _topicTextController = TextEditingController();
   MessageProvider currentAppState;
   MQTTManager manager;
+  bool isChangeable = false;
 
   void _configureAndConnect() {
     String osPrefix = 'Flutter_iOS';
@@ -53,7 +54,7 @@ class _MQTTViewState extends State<MQTTView> {
     final Scaffold scaffold = Scaffold(
       appBar: AppBar(
         title: Text('Shiftr Chat App'),
-        backgroundColor: Colors.indigo,
+        backgroundColor: Colors.green[600],
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -73,13 +74,27 @@ class _MQTTViewState extends State<MQTTView> {
       padding: const EdgeInsets.all(20.0),
       child: Column(
         children: <Widget>[
-          _buildTextFieldWith(_hostTextController, 'Enter broker address',
-              currentAppState.getAppConnectionState),
-          const SizedBox(height: 10),
           _buildTextFieldWith(
-              _topicTextController,
-              'Enter a topic to subscribe or listen',
-              currentAppState.getAppConnectionState),
+              _hostTextController,
+              'Enter broker address',
+              currentAppState.getAppConnectionState,
+              'navybee456.cloud.shiftr.io',
+              isMessage: false),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: _buildTextFieldWith(
+                    _topicTextController,
+                    'Enter any topic to talk about',
+                    currentAppState.getAppConnectionState,
+                    'akram',
+                    isMessage: false),
+              ),
+              Expanded(child: _buildChangeButton('Change'))
+            ],
+          ),
           const SizedBox(height: 10),
           _buildPublishMessageRow(),
           const SizedBox(height: 10),
@@ -94,10 +109,13 @@ class _MQTTViewState extends State<MQTTView> {
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: <Widget>[
         Expanded(
+          flex: 3,
           child: _buildTextFieldWith(_messageTextController, 'Enter a message',
-              currentAppState.getAppConnectionState),
+              currentAppState.getAppConnectionState, '',
+              isMessage: true),
         ),
-        _buildSendButtonFrom(currentAppState.getAppConnectionState)
+        Expanded(
+            child: _buildSendButtonFrom(currentAppState.getAppConnectionState))
       ],
     );
   }
@@ -129,7 +147,8 @@ class _MQTTViewState extends State<MQTTView> {
   }
 
   Widget _buildTextFieldWith(TextEditingController controller, String hintText,
-      MQTTAppConnectionState state) {
+      MQTTAppConnectionState state, String labelText,
+      {bool isMessage}) {
     bool shouldEnable = false;
     if (controller == _messageTextController &&
         state == MQTTAppConnectionState.connected) {
@@ -141,13 +160,20 @@ class _MQTTViewState extends State<MQTTView> {
       shouldEnable = true;
     }
     return TextField(
-      enabled: shouldEnable,
+      enabled: shouldEnable && (isChangeable || isMessage),
       controller: controller,
       decoration: InputDecoration(
-        contentPadding:
-            const EdgeInsets.only(left: 0, bottom: 0, top: 0, right: 0),
-        labelText: hintText,
-      ),
+          floatingLabelBehavior: labelText != null
+              ? FloatingLabelBehavior.always
+              : FloatingLabelBehavior.never,
+          contentPadding:
+              const EdgeInsets.only(left: 0, bottom: 0, top: 0, right: 0),
+          labelText: hintText,
+          labelStyle: TextStyle(
+              color: Colors.black54,
+              fontWeight: FontWeight.bold,
+              fontSize: 20.0),
+          hintText: labelText != null ? labelText : null),
     );
   }
 
@@ -168,8 +194,10 @@ class _MQTTViewState extends State<MQTTView> {
     return Row(
       children: <Widget>[
         Expanded(
-          child: RaisedButton(
-            color: Colors.lightBlueAccent,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              primary: Colors.green,
+            ),
             child: const Text('Connect'),
             onPressed: state == MQTTAppConnectionState.disconnected
                 ? _configureAndConnect
@@ -178,8 +206,10 @@ class _MQTTViewState extends State<MQTTView> {
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: RaisedButton(
-            color: Colors.redAccent,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              primary: Colors.redAccent,
+            ),
             child: const Text('Disconnect'),
             onPressed: state == MQTTAppConnectionState.connected
                 ? _disconnect
@@ -191,14 +221,30 @@ class _MQTTViewState extends State<MQTTView> {
   }
 
   Widget _buildSendButtonFrom(MQTTAppConnectionState state) {
-    return RaisedButton(
-      color: Colors.green,
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        primary: Colors.green,
+      ),
       child: const Text('Send'),
       onPressed: state == MQTTAppConnectionState.connected
           ? () {
               _publishMessage(_messageTextController.text);
             }
           : null, //
+    );
+  }
+
+  Widget _buildChangeButton(String title) {
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        primary: Colors.orangeAccent,
+      ),
+      child: Text(title),
+      onPressed: () {
+        setState(() {
+          isChangeable = true;
+        });
+      }, //
     );
   }
 }

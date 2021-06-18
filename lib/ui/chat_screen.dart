@@ -31,16 +31,13 @@ class _MQTTViewState extends State<MQTTView> {
     final MessageProvider appState = Provider.of<MessageProvider>(context);
     // Keep a reference to the app state.
     currentAppState = appState;
-    final Scaffold scaffold =
-        Scaffold(appBar: _buildAppBar(context), body: _buildColumn());
+    final Scaffold scaffold = Scaffold(
+        appBar: AppBar(
+          title: Text('Shiftr Chat App'),
+          backgroundColor: Colors.indigo,
+        ),
+        body: _buildColumn());
     return scaffold;
-  }
-
-  Widget _buildAppBar(BuildContext context) {
-    return AppBar(
-      title: const Text('MQTT'),
-      backgroundColor: Colors.greenAccent,
-    );
   }
 
   Widget _buildColumn() {

@@ -22,7 +22,8 @@ class MQTTManager {
 
   void initializeMQTTClient() {
     _client = MqttServerClient(
-        _host.isNotEmpty ? _host : 'navybee456.cloud.shiftr.io', _identifier);
+        _host.isNotEmpty ? _host : 'navybee456.cloud.shiftr.io',
+        _identifier.isNotEmpty ? _identifier : 'akram');
     _client.port = 1883;
     _client.keepAlivePeriod = 20;
     _client.onDisconnected = onDisconnected;
@@ -32,10 +33,10 @@ class MQTTManager {
     _client.onConnected = onConnected;
 
     final MqttConnectMessage connMess = MqttConnectMessage()
-        .withClientIdentifier(_identifier)
+        .withClientIdentifier(_identifier.isNotEmpty ? _identifier : 'akram')
         .withWillTopic(_topic.isNotEmpty
             ? _topic
-            : 'akram') // If you set this you must set a will message
+            : 'world') // If you set this you must set a will message
         .withWillMessage('My Will message')
         .startClean() // Non persistent session for testing
         .withWillQos(MqttQos.atLeastOnce);
@@ -63,7 +64,7 @@ class MQTTManager {
   void publish(String message) {
     final MqttClientPayloadBuilder builder = MqttClientPayloadBuilder();
     builder.addString(message);
-    _client.publishMessage(_topic.isNotEmpty ? _topic : 'akram',
+    _client.publishMessage(_topic.isNotEmpty ? _topic : 'world',
         MqttQos.exactlyOnce, builder.payload);
   }
 
@@ -85,7 +86,7 @@ class MQTTManager {
     _currentState.setAppConnectionState(MQTTAppConnectionState.connected);
     print('Mosquitto client connected....');
     _client.subscribe(
-        _topic.isNotEmpty ? _topic : 'akram', MqttQos.atLeastOnce);
+        _topic.isNotEmpty ? _topic : 'world', MqttQos.atLeastOnce);
     _client.updates.listen((List<MqttReceivedMessage<MqttMessage>> c) {
       final MqttPublishMessage recMess = c[0].payload;
       final String pt =

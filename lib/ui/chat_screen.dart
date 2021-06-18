@@ -1,4 +1,3 @@
-import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shiftr_app/mqtt/mqtt_helper.dart';
@@ -15,34 +14,33 @@ class _MQTTViewState extends State<MQTTView> {
   final TextEditingController _hostTextController = TextEditingController();
   final TextEditingController _messageTextController = TextEditingController();
   final TextEditingController _topicTextController = TextEditingController();
+  final TextEditingController _nameTextController = TextEditingController();
   MessageProvider currentAppState;
   MQTTManager manager;
   bool isChangeable = false;
 
   void _configureAndConnect() {
-    String osPrefix = 'Flutter_iOS';
-    if (Platform.isAndroid) {
-      osPrefix = 'Flutter_Android';
-    }
+    isChangeable = false;
     manager = MQTTManager(
         host: _hostTextController.text,
         topic: _topicTextController.text,
-        identifier: osPrefix,
+        identifier: _nameTextController.text,
         state: currentAppState);
     manager.initializeMQTTClient();
     manager.connect();
   }
 
   void _disconnect() {
+    isChangeable = false;
     manager.disconnect();
   }
 
   void _publishMessage(String text) {
-    String osPrefix = 'Flutter_iOS';
-    if (Platform.isAndroid) {
-      osPrefix = 'Flutter_Android';
-    }
-    final String message = osPrefix + ' : ' + text;
+    final String message = (_nameTextController.text.isNotEmpty
+            ? _nameTextController.text
+            : 'akram') +
+        ' : ' +
+        text;
     manager.publish(message);
     _messageTextController.clear();
   }
@@ -76,9 +74,16 @@ class _MQTTViewState extends State<MQTTView> {
         children: <Widget>[
           _buildTextFieldWith(
               _hostTextController,
-              'Enter broker address',
+              'Enter Broker Address',
               currentAppState.getAppConnectionState,
               'navybee456.cloud.shiftr.io',
+              isMessage: false),
+          const SizedBox(height: 10),
+          _buildTextFieldWith(
+              _topicTextController,
+              'Enter any topic to talk about',
+              currentAppState.getAppConnectionState,
+              'world',
               isMessage: false),
           const SizedBox(height: 10),
           Row(
@@ -86,13 +91,16 @@ class _MQTTViewState extends State<MQTTView> {
               Expanded(
                 flex: 3,
                 child: _buildTextFieldWith(
-                    _topicTextController,
-                    'Enter any topic to talk about',
+                    _nameTextController,
+                    'Enter Your Name',
                     currentAppState.getAppConnectionState,
                     'akram',
                     isMessage: false),
               ),
-              Expanded(child: _buildChangeButton('Change'))
+              Expanded(
+                child:
+                    _buildChangeButton(currentAppState.getAppConnectionState),
+              ),
             ],
           ),
           const SizedBox(height: 10),
@@ -156,10 +164,13 @@ class _MQTTViewState extends State<MQTTView> {
     } else if ((controller == _hostTextController &&
             state == MQTTAppConnectionState.disconnected) ||
         (controller == _topicTextController &&
+            state == MQTTAppConnectionState.disconnected) ||
+        (controller == _nameTextController &&
             state == MQTTAppConnectionState.disconnected)) {
       shouldEnable = true;
     }
     return TextField(
+      style: TextStyle(color: Colors.black54),
       enabled: shouldEnable && (isChangeable || isMessage),
       controller: controller,
       decoration: InputDecoration(
@@ -179,12 +190,18 @@ class _MQTTViewState extends State<MQTTView> {
 
   Widget _buildScrollableTextWith(String text) {
     return Padding(
-      padding: const EdgeInsets.all(20.0),
+      padding: const EdgeInsets.symmetric(horizontal: 20.0),
       child: Container(
         width: 400,
-        height: 200,
+        height: 250,
+        decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(15.0),
+            border: Border.all(color: Colors.green[500], width: 2)),
         child: SingleChildScrollView(
-          child: Text(text),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 15.0),
+            child: Text(text),
+          ),
         ),
       ),
     );
@@ -234,17 +251,19 @@ class _MQTTViewState extends State<MQTTView> {
     );
   }
 
-  Widget _buildChangeButton(String title) {
+  Widget _buildChangeButton(MQTTAppConnectionState state) {
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
         primary: Colors.orangeAccent,
       ),
-      child: Text(title),
-      onPressed: () {
-        setState(() {
-          isChangeable = true;
-        });
-      }, //
+      child: Text('Change'),
+      onPressed: state == MQTTAppConnectionState.disconnected
+          ? () {
+              setState(() {
+                isChangeable = true;
+              });
+            }
+          : null, //
     );
   }
 }
